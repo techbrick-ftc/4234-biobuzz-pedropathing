@@ -19,6 +19,7 @@ public class Testing extends LinearOpMode {
 
     boolean previousB = false;
     boolean previousStickReset = false;
+    boolean previousBumpers = false;
 
     double xP;
     double yP;
@@ -44,7 +45,7 @@ public class Testing extends LinearOpMode {
             // Joystick inputs
             xP = gamepad1.left_stick_x;
             yP = -gamepad1.left_stick_y;
-            rP = -gamepad1.right_stick_x;
+            rP = gamepad1.right_stick_x;
 
             // Slow mode toggle (B button edge detection)
             boolean currentB = gamepad1.b;
@@ -61,11 +62,19 @@ public class Testing extends LinearOpMode {
             }
             previousStickReset = currentStickReset;
 
+            // Field / robot centric toggle (both bumpers pressed edge detection)
+            boolean currentBumpers = gamepad1.left_bumper && gamepad1.right_bumper;
+            if (currentBumpers && !previousBumpers) {
+                fieldCentricActive = !fieldCentricActive;
+            }
+            previousBumpers = currentBumpers;
+
             // Drive execution
             drive.drive(xP, yP, rP, drivePow, fieldCentricActive);
 
             // Telemetry
             telemetry.addData("Slow Mode", slowMode ? "ON ([B] to toggle)" : "OFF ([B] to toggle)");
+            telemetry.addData("Drive Mode", fieldCentricActive ? "FIELD centric ([LB+RB] to toggle)" : "ROBOT centric ([LB+RB] to toggle)");
             telemetry.addData("Heading (radians)", drive.getImu());
             telemetry.addData("Raw Heading (radians)", drive.getRawImu());
             telemetry.addData("Drive Power Multiplier", drivePow);
