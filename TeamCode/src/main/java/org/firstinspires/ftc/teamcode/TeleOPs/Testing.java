@@ -20,6 +20,7 @@ public class Testing extends LinearOpMode {
     boolean previousB = false;
     boolean previousStickReset = false;
     boolean previousBumpers = false;
+    boolean previousY = false;
 
     double xP;
     double yP;
@@ -69,12 +70,22 @@ public class Testing extends LinearOpMode {
             }
             previousBumpers = currentBumpers;
 
+            // Heading lock toggle (Y button edge detection)
+            boolean currentY = gamepad1.y;
+            if (currentY && !previousY) {
+                drive.setHeadingLock(!drive.isHeadingLockEnabled());
+            }
+            previousY = currentY;
+
             // Drive execution
             drive.drive(xP, yP, rP, drivePow, fieldCentricActive);
 
             // Telemetry
             telemetry.addData("Slow Mode", slowMode ? "ON ([B] to toggle)" : "OFF ([B] to toggle)");
             telemetry.addData("Drive Mode", fieldCentricActive ? "FIELD centric ([LB+RB] to toggle)" : "ROBOT centric ([LB+RB] to toggle)");
+            telemetry.addData("Heading Lock", (drive.isHeadingLockEnabled() ? "ON" : "OFF") + " ([Y] to toggle)" + (drive.isHeadingLocked() ? " - LOCKED" : ""));
+            telemetry.addData("Target Heading (deg)", Math.toDegrees(drive.getTargetHeading()));
+            telemetry.addData("Heading Error (deg)", Math.toDegrees(drive.getHeadingError()));
             telemetry.addData("Heading (radians)", drive.getImu());
             telemetry.addData("Raw Heading (radians)", drive.getRawImu());
             telemetry.addData("Drive Power Multiplier", drivePow);

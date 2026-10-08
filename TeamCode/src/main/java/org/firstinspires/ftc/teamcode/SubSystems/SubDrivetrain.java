@@ -7,6 +7,7 @@ import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.robotcore.external.navigation.UnnormalizedAngleUnit;
 
 import java.util.List;
 
@@ -19,6 +20,17 @@ public class SubDrivetrain {
     private final GoBildaPinpointDriver pinpoint;
 
     private double offset;
+
+    // Heading lock tuning (radians). Tune KP first with KD = 0, then add KD to stop overshoot.
+    public static double HEADING_KP = 0.8;
+    public static double HEADING_KD = 0.05;
+    public static double TURN_DEADZONE = 0.05;
+    public static double SETTLE_VELOCITY = 0.3; // rad/s
+    public static double MAX_CORRECTION = 0.5;
+
+    private boolean headingLockEnabled = true;
+    private boolean headingLocked = false;
+    private double targetHeading = 0;
 
     public SubDrivetrain(HardwareMap hardwareMap, final double offsetIMU) {
         this(hardwareMap, "pinpoint", offsetIMU);
@@ -72,9 +84,10 @@ public class SubDrivetrain {
     }
 
     public void drive(double xMovement, double yMovement, double rotation, double powerMultiplier, boolean fieldCentric) {
-        if ((Math.abs(xMovement) >= 0.05) || (Math.abs(yMovement) >= 0.05) || (Math.abs(rotation) >= 0.05)) {
+        if ((Math.abs(xMovement) >= TURN_DEADZONE) || (Math.abs(yMovement) >= TURN_DEADZONE) || (Math.abs(rotation) >= TURN_DEADZONE)) {
 
             double angle = getImu();
+            rotation = computeRotation(rotation, angle);
 
             double x = fieldCentric ? (xMovement * Math.cos(-angle) - yMovement * Math.sin(-angle)) : xMovement;
             double y = fieldCentric ? (yMovement * Math.cos(-angle) + xMovement * Math.sin(-angle)) : yMovement;
@@ -92,8 +105,56 @@ public class SubDrivetrain {
             backRight.setPower(backRightPower * powerMultiplier);
 
         } else {
+            // Robot idle: drop the lock so it doesn't fight being repositioned
+            headingLocked = false;
             stop();
         }
+    }
+
+    // Heading lock: hold the heading the robot settled at once the driver releases the turn stick
+    private double computeRotation(double stickRotation, double currentHeading) {
+        if (!headingLockEnabled || Math.abs(stickRotation) >= TURN_DEADZONE) {
+            headingLocked = false;
+            return stickRotation;
+        }
+
+        double headingVelocity = pinpoint.getHeadingVelocity(UnnormalizedAngleUnit.RADIANS);
+
+        // Wait for the robot to stop coasting before capturing the target, so it doesn't snap back
+        if (!headingLocked) {
+            if (Math.abs(headingVelocity) > SETTLE_VELOCITY) return 0;
+            targetHeading = currentHeading;
+            headingLocked = true;
+        }
+
+        // Wrapped to [-PI, PI] so it always corrects the short way around
+        double error = AngleUnit.normalizeRadians(targetHeading - currentHeading);
+        double correction = HEADING_KP * error - HEADING_KD * headingVelocity;
+        correction = Math.max(-MAX_CORRECTION, Math.min(MAX_CORRECTION, correction));
+
+        // Positive rotation turns clockwise while heading increases counter-clockwise, so negate
+        return -correction;
+    }
+
+    public void setHeadingLock(boolean enabled) {
+        headingLockEnabled = enabled;
+        if (!enabled) headingLocked = false;
+    }
+
+    public boolean isHeadingLockEnabled() {
+        return headingLockEnabled;
+    }
+
+    public boolean isHeadingLocked() {
+        return headingLocked;
+    }
+
+    public double getTargetHeading() {
+        return targetHeading;
+    }
+
+    public double getHeadingError() {
+        return headingLocked ? AngleUnit.normalizeRadians(targetHeading - getImu()) : 0;
     }
 
     public void To(double X_Movement, double Y_Movement, double Rotation, double powerMultiplier, boolean fieldCentric) {
@@ -122,10 +183,12 @@ public class SubDrivetrain {
 
     public void setOffset(double off) {
         offset = off;
+        headingLocked = false;
     }
 
     public void resetHeading() {
         offset = getRawImu();
+        headingLocked = false;
     }
 
     public void recalibrate() {
