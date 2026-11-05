@@ -46,6 +46,7 @@ public class ForesightTuner extends Procedure {
         double strafeDeceleration = runOpMode(new StrafeDeceleration(localizerFunction, drivetrainFunction, velocity.get()));
 
         List<Double> headingBraking = runOpMode(new HeadingBraking(localizerFunction, drivetrainFunction));
+        if (headingBraking.isEmpty()) abort("Heading Braking did not produce a valid fit (stopped early or velocities too similar). Check the localizer config and re-run.");
         double heading = runOpMode(new HeadingTuner(localizerFunction, drivetrainFunction));
 
         double headingLinear = headingBraking.get(0);
@@ -57,7 +58,9 @@ public class ForesightTuner extends Procedure {
         double safeDistanceBraking = Math.max(distanceBraking.get(), 15.0);
 
         List<Double> forwardBraking = runOpMode(new ForwardBraking(localizerFunction, drivetrainFunction, headingLinear, headingQuadratic, heading, safeDistanceBraking));
+        if (forwardBraking.isEmpty()) abort("Forward Braking did not produce a valid fit (stopped early or velocities too similar). Check the localizer config and re-run.");
         List<Double> strafeBraking = runOpMode(new StrafeBraking(localizerFunction, drivetrainFunction, headingLinear, headingQuadratic, heading, safeDistanceBraking));
+        if (strafeBraking.isEmpty()) abort("Strafe Braking did not produce a valid fit (stopped early or velocities too similar). Check the localizer config and re-run.");
 
         double forwardLinear = forwardBraking.get(0);
         double forwardQuadratic = forwardBraking.get(1);
@@ -504,8 +507,7 @@ class HeadingBraking extends TuningOpMode<List<Double>> {
                     if (iteration >= POWERS.length) {
                         drivetrain.stop();
 
-                        double[] c = quadraticFit(velocityToBrakingDistance);
-                        coefficients = List.of(c[0], c[1]);
+                        coefficients = BrakingFit.fit(velocityToBrakingDistance, telemetry);
 
                         state = State.DONE;
                     } else {
@@ -685,6 +687,7 @@ class ForwardBraking extends TuningOpMode<List<Double>> {
     private double power;
     private Vector2D startPosition;
     private double measuredVelocity;
+    private double travelSign;
 
     public ForwardBraking(Function<HardwareMap, Localizer> localizerFunction, Function<HardwareMap, Drivetrain> drivetrainFunction,
                           double headingLinear, double headingQuadratic, double headingKP, double distance) {
@@ -721,11 +724,16 @@ class ForwardBraking extends TuningOpMode<List<Double>> {
                 power = POWERS[iteration];
             }
 
+            telemetry.addData("State", state + " iter=" + iteration + " dir=" + direction + " power=" + power);
+            telemetry.addData("x / vx", "%.1f in / %.1f in/s", localizer.pose().x(), localizer.velocity().toVector2D().x());
+            telemetry.update();
+
             switch (state) {
                 case DRIVE: {
                     if ((direction > 0 && Math.abs(localizer.pose().x()) >= distance) || (direction < 0 && Math.abs(localizer.pose().x()) <= 12)) {
                         startPosition = localizer.pose().toVector2D();
                         measuredVelocity = localizer.velocity().toVector2D().magnitude();
+                        travelSign = Math.signum(localizer.velocity().toVector2D().x());
 
                         brake(drivetrain, localizer);
                         state = State.BRAKE;
@@ -736,7 +744,8 @@ class ForwardBraking extends TuningOpMode<List<Double>> {
                     break;
                 }
                 case BRAKE: {
-                    if (localizer.velocity().toVector2D().magnitude() > 0.25 && timer.seconds() < MAX_BRAKE_TIME) {
+                    // stop once forward motion ends; magnitude alone misses it when the brake power reverses the robot
+                    if (travelSign * localizer.velocity().toVector2D().x() > 0.25 && timer.seconds() < MAX_BRAKE_TIME) {
                         brake(drivetrain, localizer);
                         break;
                     }
@@ -753,9 +762,10 @@ class ForwardBraking extends TuningOpMode<List<Double>> {
             }
         }
 
+        drivetrain.stop();
+
         if (state == State.DONE) {
-            double[] c = quadraticFit(velocityToBrakingDistance);
-            coefficients = List.of(c[0], c[1]);
+            coefficients = BrakingFit.fit(velocityToBrakingDistance, telemetry);
         }
 
         return coefficients;
@@ -794,6 +804,9 @@ class ForwardBraking extends TuningOpMode<List<Double>> {
         double brakingDistance = endPosition.minus(startPosition).magnitude();
 
         velocityToBrakingDistance.add(new double[]{measuredVelocity, brakingDistance});
+
+        telemetry.addData("Trial " + (iteration + 1), "velocity=%.3f in/s, braking distance=%.3f in", measuredVelocity, brakingDistance);
+        telemetry.update();
 
         iteration++;
 
@@ -920,8 +933,7 @@ class StrafeBraking extends TuningOpMode<List<Double>> {
         }
 
         if (state == State.DONE) {
-            double[] c = quadraticFit(velocityToBrakingDistance);
-            coefficients = List.of(c[0], c[1]);
+            coefficients = BrakingFit.fit(velocityToBrakingDistance, telemetry);
         }
 
         return coefficients;
@@ -959,6 +971,9 @@ class StrafeBraking extends TuningOpMode<List<Double>> {
         double brakingDistance = endPosition.minus(startPosition).magnitude();
 
         velocityToBrakingDistance.add(new double[]{measuredVelocity, brakingDistance});
+
+        telemetry.addData("Trial " + (iteration + 1), "velocity=%.3f in/s, braking distance=%.3f in", measuredVelocity, brakingDistance);
+        telemetry.update();
 
         iteration++;
 
@@ -1221,3 +1236,17 @@ class StrafeTranslational extends TuningOpMode<List<Double>> {
     }
 }
 
+
+class BrakingFit {
+    // Returns {linear, quadratic}, or an empty list if the regression is degenerate (e.g. all velocities ~equal).
+    static List<Double> fit(List<double[]> velocityToBrakingDistance, org.firstinspires.ftc.robotcore.external.Telemetry telemetry) {
+        try {
+            double[] c = quadraticFit(velocityToBrakingDistance);
+            return List.of(c[0], c[1]);
+        } catch (IllegalArgumentException e) {
+            telemetry.addData("Braking fit failed", e.getMessage() + " -- velocities were too similar. Check the localizer config.");
+            telemetry.update();
+            return Collections.emptyList();
+        }
+    }
+}
