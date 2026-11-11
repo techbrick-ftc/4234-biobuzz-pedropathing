@@ -18,7 +18,19 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 
 public class Constants {
     // Names/directions match SubDrivetrain. Confirm with the Mecanum Tuner.
-    public static MecanumConfig drivetrainConfig = new MecanumConfig(
+
+    // Updated Nov 10. Revert if necessary.
+    public static MecanumConfig drivetrainConfig = new MecanumConfig(c -> {
+        c.frontLeftName.set("frontLeft");
+        c.frontRightName.set("frontRight");
+        c.backLeftName.set("backLeft");
+        c.backRightName.set("backRight");
+        c.frontLeftDirection.set(DcMotorSimple.Direction.REVERSE);
+        c.frontRightDirection.set(DcMotorSimple.Direction.FORWARD);
+        c.backLeftDirection.set(DcMotorSimple.Direction.REVERSE);
+        c.backRightDirection.set(DcMotorSimple.Direction.FORWARD);
+    });
+    /*public static MecanumConfig drivetrainConfig = new MecanumConfig(
             c -> {
                 c.frontLeftName.set("frontLeft");
                 c.backLeftName.set("backLeft");
@@ -32,22 +44,19 @@ public class Constants {
 
                 c.manualBrakeMode.set(true);
             }
-    );
+    ); */
 
     // From Pinpoint Tuner.
-    public static PinpointConfig localizerConfig = new PinpointConfig(
-            c -> {
-                c.name.set("pinpoint");
-                c.podType.set(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
-                c.xPodOffset.set(-7.425871721402867);
-                c.yPodOffset.set(1.1859931345061054);
-                c.xPodDirection.set(GoBildaPinpointDriver.EncoderDirection.REVERSED);
-                c.yPodDirection.set(GoBildaPinpointDriver.EncoderDirection.REVERSED);
-                c.globalDistanceUnit.set(DistanceUnit.INCH);
-                c.offsetUnits.set(DistanceUnit.INCH);
-            }
-    );
-
+    public static PinpointConfig localizerConfig = new PinpointConfig(c -> {
+        c.name.set("pinpoint");
+        c.podType.set(GoBildaPinpointDriver.GoBildaOdometryPods.goBILDA_4_BAR_POD);
+        c.xPodOffset.set(-7.472082423412894);
+        c.yPodOffset.set(1.8371110450564407);
+        c.xPodDirection.set(GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        c.yPodDirection.set(GoBildaPinpointDriver.EncoderDirection.REVERSED);
+        c.globalDistanceUnit.set(DistanceUnit.INCH);
+        c.offsetUnits.set(DistanceUnit.INCH);
+    });
     // From Foresight Tuner. Provisional: tuned off-field; re-run on a real field surface.
     public static ForesightConfig foresightConfig = new ForesightConfig(
             c -> {
