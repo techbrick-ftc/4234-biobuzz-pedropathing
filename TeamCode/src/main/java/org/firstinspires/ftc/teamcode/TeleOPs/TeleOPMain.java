@@ -1,10 +1,14 @@
 package org.firstinspires.ftc.teamcode.TeleOPs;
 
+import com.pedropathing.follower.Follower;
+import com.pedropathing.math.Pose;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
+import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.teamcode.SubSystems.SubDrivetrain;
 import org.firstinspires.ftc.teamcode.SubSystems.SubTurret;
+import org.firstinspires.ftc.teamcode.pedro.Constants;
 
 @TeleOp(name = "TeleOP Main")
 public class TeleOPMain extends LinearOpMode {
@@ -48,15 +52,19 @@ public class TeleOPMain extends LinearOpMode {
     final double TARGET_HEIGHT_GLOBAL = 34; // TODO: Measure
 
 
-    // Declare drivetrain subsystem
+    // Declare drivetrain subsystem, turret, and follower
     SubDrivetrain drive = null;
     SubTurret turret = null;
+    Follower follower = null;
 
     @Override
     public void runOpMode() throws InterruptedException {
 
-        // Initialize drivetrain subsystem
+        // Initialize subsystems and localizer follower
         drive = new SubDrivetrain(hardwareMap, 0);
+        turret = new SubTurret(hardwareMap, "pinpoint", !isBlueTeam);
+        follower = Constants.create(hardwareMap);
+        follower.setPose(new Pose(0, 0, 0));
 
         telemetry.addData("Status", "Initialized");
         telemetry.update();
@@ -65,6 +73,10 @@ public class TeleOPMain extends LinearOpMode {
         if (isStopRequested()) return;
 
         while (opModeIsActive()) {
+
+            // Update Pedro Pathing Pinpoint localizer frame
+            follower.update();
+            Pose robotPose = follower.pose();
 
             // Input Handling and Drivetrain
 
@@ -116,9 +128,9 @@ public class TeleOPMain extends LinearOpMode {
                 // Drive execution
                 drive.drive(xP, yP, rP, drivePow, fieldCentricActive);
 
-                // Turret and Flywheel
-                if(isBlueTeam) {
-                    if(seesawHumanPlayerSideIsUp) {
+                // Turret and Flywheel target coordinates
+                if (isBlueTeam) {
+                    if (seesawHumanPlayerSideIsUp) {
                         targetX = BLUE_HUMAN_PLAYER_SIDE_TARGET_X;
                         targetY = BLUE_HUMAN_PLAYER_SIDE_TARGET_Y;
                     } else {
@@ -126,7 +138,7 @@ public class TeleOPMain extends LinearOpMode {
                         targetY = BLUE_OTHER_SIDE_TARGET_Y;
                     }
                 } else {
-                    if(seesawHumanPlayerSideIsUp) {
+                    if (seesawHumanPlayerSideIsUp) {
                         targetX = RED_HUMAN_PLAYER_SIDE_TARGET_X;
                         targetY = RED_HUMAN_PLAYER_SIDE_TARGET_Y;
                     } else {
@@ -135,7 +147,14 @@ public class TeleOPMain extends LinearOpMode {
                     }
                 }
 
-                turret.autoSet(robotPose.x(), robotPose.y(), targetX, targetY, follower.pose().heading());
+                // Update turret position using current robot pose (x, y, heading) and target coordinates (targetX, targetY)
+                double distanceToTarget = turret.autoSet(
+                    robotPose.x(),
+                    robotPose.y(),
+                    robotPose.heading(),
+                    targetX,
+                    targetY
+                );
 
 
             // Telemetry
@@ -153,20 +172,17 @@ public class TeleOPMain extends LinearOpMode {
                 // Information
                 telemetry.addLine("Info -----------------------------");
                 telemetry.addData("Seesaw", seesawHumanPlayerSideIsUp ? "Human player side up. Press [B] to change" : "Human player side down. Press [Y] to change");
+                telemetry.addData("Robot Pose X", "%.2f", robotPose.x());
+                telemetry.addData("Robot Pose Y", "%.2f", robotPose.y());
+                telemetry.addData("Robot Heading (deg)", "%.2f", Math.toDegrees(robotPose.heading()));
+                telemetry.addData("Target Pose", "X: %.1f, Y: %.1f", targetX, targetY);
+                telemetry.addData("Distance to Target", "%.2f", distanceToTarget);
+                telemetry.addData("Turret Target Angle (deg)", "%.2f", turret.getTurretTargetAngle(AngleUnit.DEGREES));
+                telemetry.addData("Turret Current Angle (deg)", "%.2f", turret.getTurretCurrentAngle(AngleUnit.DEGREES));
                 telemetry.addData("Raw Heading (radians)", drive.getRawImu());
                 telemetry.addData("Drive Power Multiplier", drivePow);
 
                 telemetry.update();
-
-
-            // Potentially outdated Telemetry data. May need to be removed.
-            //telemetry.addData("Drive Mode", fieldCentricActive ? "FIELD centric ([LB+RB] to toggle)" : "ROBOT centric ([LB+RB] to toggle)");
-            //telemetry.addData("Heading Lock", (drive.isHeadingLockEnabled() ? "ON" : "OFF") + " ([Y] to toggle)" + (drive.isHeadingLocked() ? " - LOCKED" : ""));
-            //telemetry.addData("Target Heading (deg)", Math.toDegrees(drive.getTargetHeading()));
-            //telemetry.addData("Heading Error (deg)", Math.toDegrees(drive.getHeadingError()));
-            //telemetry.addData("Heading (radians)", drive.getImu());
-            //telemetry.addData("Raw Heading (radians)", drive.getRawImu());
-            //telemetry.addData("Drive Power Multiplier", drivePow);
         }
     }
 }
