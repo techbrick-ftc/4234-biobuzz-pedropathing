@@ -23,7 +23,6 @@ public class TeleOPMain extends LinearOpMode {
     double drivePow = DRIVE_DEFAULT_POWER;
     boolean fieldCentricActive = true;
 
-    boolean previousB = false;
     boolean previousStickReset = false;
     boolean previousBumpers = false;
     boolean previousX = false;
@@ -85,13 +84,17 @@ public class TeleOPMain extends LinearOpMode {
                 yP = -gamepad1.left_stick_y;
                 rP = gamepad1.right_stick_x;
 
-                // Slow mode toggle (B button edge detection)
-                boolean currentB = gamepad1.b;
-                if (currentB && !previousB) {
-                    slowMode = !slowMode;
-                    drivePow = slowMode ? DRIVE_SLOW_POWER : DRIVE_DEFAULT_POWER;
+                // Slow mode toggles
+                if (gamepad1.dpad_up) {
+                    slowMode = false;
+                    drivePow = DRIVE_DEFAULT_POWER;
+                } else if (gamepad1.dpad_left || gamepad1.dpad_right) {
+                    slowMode = true;
+                    drivePow = DRIVE_SLOW_POWER;
+                } else if (gamepad1.dpad_down) {
+                    slowMode = true;
+                    drivePow = DRIVE_CRAWL_POWER;
                 }
-                previousB = currentB;
 
                 // Reset heading / recalibrate IMU (both stick buttons pressed edge detection)
                 boolean currentStickReset = gamepad1.left_stick_button && gamepad1.right_stick_button;
@@ -167,6 +170,7 @@ public class TeleOPMain extends LinearOpMode {
                 // Gamepad 2 Controls
                 telemetry.addLine("Gamepad 2 Controls -----------------------------");
                 telemetry.addData("Field Centric", fieldCentricActive ? "ON ([LEFT_STICK] + [RIGHT_STICK] to disable)]" : "OFF ([LEFT_STICK] + [RIGHT_STICK] to enable)]");
+                telemetry.addData("Team Color", isBlueTeam ? "Blue. Press [B] for Red." : "Red. Press [X] for Blue");
                 telemetry.addLine();
 
                 // Information
