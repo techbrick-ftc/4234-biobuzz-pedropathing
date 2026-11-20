@@ -32,5 +32,15 @@ public class SubData {
 
     }
 
+    public static boolean isSeesawHumanPlayerSideUp = false;
+
+    public static void setSeesawHumanPlayerSideUp(boolean isUp) {
+        isSeesawHumanPlayerSideUp = isUp;
+    }
+
+    public static boolean recallSeesawHumanPlayerSideUp() {
+        return isSeesawHumanPlayerSideUp;
+    }
+
 
 }

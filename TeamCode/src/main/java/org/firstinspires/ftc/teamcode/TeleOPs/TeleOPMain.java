@@ -32,7 +32,7 @@ public class TeleOPMain extends LinearOpMode {
     double yP;
     double rP;
 
-    boolean isBlueTeam = false;
+    boolean isBlueTeam = SubData.isBlueTeam;
 
     // Field Information
     boolean seesawHumanPlayerSideIsUp = false;
@@ -183,7 +183,7 @@ public class TeleOPMain extends LinearOpMode {
 
                 // Gamepad 2 Controls
                 telemetry.addLine("Gamepad 2 Controls -----------------------------");
-                telemetry.addData("Field Centric", fieldCentricActive ? "ON ([LEFT_STICK] + [RIGHT_STICK] to disable)]" : "OFF ([LEFT_STICK] + [RIGHT_STICK] to enable)]");
+                telemetry.addData("Field Centric", fieldCentricActive ? "ON ([GP2 LB+RB] to disable)" : "OFF ([GP2 LB+RB] to enable)");
                 telemetry.addData("Team Color", isBlueTeam ? "Blue. Press [B] for Red." : "Red. Press [X] for Blue");
                 telemetry.addLine();
 

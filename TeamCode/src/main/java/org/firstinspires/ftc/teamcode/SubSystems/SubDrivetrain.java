@@ -80,7 +80,14 @@ public class SubDrivetrain {
             }
         }
         pinpoint = tempPinpoint;
-        pinpoint.resetPosAndIMU();
+        // Note: pinpoint.resetPosAndIMU() is not called automatically here so it does not reset
+        // odometry pose data managed by Pedro Pathing Follower or autonomous routines.
+    }
+
+    public void resetPinpoint() {
+        if (pinpoint != null) {
+            pinpoint.resetPosAndIMU();
+        }
     }
 
     public void drive(double xMovement, double yMovement, double rotation, double powerMultiplier, boolean fieldCentric) {

@@ -52,12 +52,18 @@ public class SubTurret {
 
     /**
      * Sets the target turret angle in radians.
-     * Ticks calculation: angle (rad) * gear ratio * ticks per radian.
+     * Performs continuous angle unwrapping relative to current turret position
+     * to take the shortest path and prevent ~360 degree spin flips near [-PI, PI] boundary.
      *
      * @param targetAngleInRadians Target turret angle in radians
      */
     public void setTargetAngle(double targetAngleInRadians) {
-        turretTargetAngle = (int) Math.round(targetAngleInRadians * TURRET_GEAR_RATIO * TURRET_TICKS_PER_RADIAN);
+        double ticksPerRad = TURRET_GEAR_RATIO * TURRET_TICKS_PER_RADIAN;
+        double currentAngleInRadians = turretRotation.getCurrentPosition() / ticksPerRad;
+        double deltaAngle = AngleUnit.normalizeRadians(targetAngleInRadians - currentAngleInRadians);
+        double unwrappedTargetAngle = currentAngleInRadians + deltaAngle;
+
+        turretTargetAngle = (int) Math.round(unwrappedTargetAngle * ticksPerRad);
         turretRotation.setTargetPosition(turretTargetAngle);
         turretRotation.setPower(turretPower);
     }
