@@ -12,11 +12,19 @@ public class SubTurret {
     private final DcMotorEx turretRotation;
     private final DcMotorEx flyWheel;
 
+    // Turret Info
     public static final double TURRET_MOTOR_RPM = 435;
     public static final double TURRET_GEAR_RATIO = 2.75;
     public static final double TURRET_TICKS_PER_RADIAN = 14;
     public static final double DEFAULT_TURRET_POWER = 0.8;
     public static final int TARGET_TOLERANCE_TICKS = 10;
+
+    // Flywheel Info
+    final double SHOOTING_ANGLE_DEGREES = 60;
+    final double FLYWHEEL_DIAMETER_INCHES = 5;
+    final double FLYWHEEL_EFFICIENCY = 0.85;
+    final double SHOOTER_ANGLE = 70;
+
 
     private int turretTargetAngle = 0;
     private double turretPower = DEFAULT_TURRET_POWER;
