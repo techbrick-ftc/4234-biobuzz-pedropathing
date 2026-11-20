@@ -65,7 +65,7 @@ public class TeleOPMain extends LinearOpMode {
 
         // Initialize subsystems and localizer follower
         drive = new SubDrivetrain(hardwareMap, 0);
-        turret = new SubTurret(hardwareMap, "pinpoint", !isBlueTeam);
+        turret = new SubTurret(hardwareMap);
         follower = Constants.create(hardwareMap);
         follower.setPose(new Pose(0, 0, 0));
 
@@ -165,7 +165,7 @@ public class TeleOPMain extends LinearOpMode {
                 }
 
                 // Update turret position using current robot pose (x, y, heading) and target coordinates (targetX, targetY)
-                double distanceToTarget = turret.autoSet(
+                turret.Set(
                     robotPose.x(),
                     robotPose.y(),
                     robotPose.heading(),
@@ -194,7 +194,7 @@ public class TeleOPMain extends LinearOpMode {
                 telemetry.addData("Robot Pose Y", "%.2f", robotPose.y());
                 telemetry.addData("Robot Heading (deg)", "%.2f", Math.toDegrees(robotPose.heading()));
                 telemetry.addData("Target Pose", "X: %.1f, Y: %.1f", targetX, targetY);
-                telemetry.addData("Distance to Target", "%.2f", distanceToTarget);
+                telemetry.addData("Distance to Target", "%.2f", turret.getDistanceToTarget());
                 telemetry.addData("Turret Target Angle (deg)", "%.2f", turret.getTurretTargetAngle(AngleUnit.DEGREES));
                 telemetry.addData("Turret Current Angle (deg)", "%.2f", turret.getTurretCurrentAngle(AngleUnit.DEGREES));
                 telemetry.addData("Raw Heading (radians)", drive.getRawImu());
