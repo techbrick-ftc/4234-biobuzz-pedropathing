@@ -4,6 +4,7 @@ public class SubData {
 
     final double SHOOTING_ANGLE_DEGREES = 60;
     final double FLYWHEEL_DIAMETER_INCHES = 5;
+    public static boolean isBlueTeam = false;
 
     public double calculateTargetRPM(double distance, double speed, double direction, double shootingangle) {
 
@@ -17,6 +18,18 @@ public class SubData {
 
 
         return targetRPM;
+    }
+
+    public static void setTeamColor(boolean isBlueTeamInput) {
+
+        isBlueTeam = isBlueTeamInput;
+
+    }
+
+    public static boolean recallTeam() {
+
+        return isBlueTeam;
+
     }
 
 

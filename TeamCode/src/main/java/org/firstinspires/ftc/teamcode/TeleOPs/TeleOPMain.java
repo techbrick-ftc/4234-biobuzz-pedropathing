@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
+import org.firstinspires.ftc.teamcode.SubSystems.SubData;
 import org.firstinspires.ftc.teamcode.SubSystems.SubDrivetrain;
 import org.firstinspires.ftc.teamcode.SubSystems.SubTurret;
 import org.firstinspires.ftc.teamcode.pedro.Constants;
@@ -59,6 +60,9 @@ public class TeleOPMain extends LinearOpMode {
     @Override
     public void runOpMode() throws InterruptedException {
 
+        // Recall saved team color from SubData (persisted from Auto)
+        isBlueTeam = SubData.recallTeam();
+
         // Initialize subsystems and localizer follower
         drive = new SubDrivetrain(hardwareMap, 0);
         turret = new SubTurret(hardwareMap, "pinpoint", !isBlueTeam);
@@ -66,6 +70,7 @@ public class TeleOPMain extends LinearOpMode {
         follower.setPose(new Pose(0, 0, 0));
 
         telemetry.addData("Status", "Initialized");
+        telemetry.addData("Team Color Recalled", isBlueTeam ? "Blue" : "Red");
         telemetry.update();
 
         waitForStart();
@@ -125,6 +130,15 @@ public class TeleOPMain extends LinearOpMode {
                     seesawHumanPlayerSideIsUp = false;
                 } else if (gamepad1.y) {
                     seesawHumanPlayerSideIsUp = true;
+                }
+
+                // Team Color Toggle (GP2 B / Y)
+                if (gamepad2.b) {
+                    isBlueTeam = false;
+                    SubData.setTeamColor(false);
+                } else if (gamepad2.x) {
+                    isBlueTeam = true;
+                    SubData.setTeamColor(true);
                 }
 
 
