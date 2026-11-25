@@ -89,7 +89,7 @@ public class SubTurret {
         // Flywheel Calculations
         double flywheelTargetRPM = (Math.sqrt((32.2 * Math.pow(targetX - robotX, 2)) / (2.0 * Math.pow(Math.cos(Math.toRadians(TURRET_ANGLE)), 2) * ((targetX - robotX) * Math.tan(Math.toRadians(TURRET_ANGLE)) - (targetY - robotY)))) / (2.0 * Math.PI * (2.0 / 12.0))) * 60.0;
         setTargetAngle(targetAngleRelativeToRobot);
-        setTurretPower(flywheelTargetRPM);
+        setTurretPower(flywheelTargetRPM / FLYWHEEL_RPM);
 
     }
 
