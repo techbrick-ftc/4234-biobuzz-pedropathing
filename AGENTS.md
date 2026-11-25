@@ -1,0 +1,1 @@
+Read and strictly follow all project guidelines, coding standards, and hardware conventions defined in @AI_GUIDELINES.md.
