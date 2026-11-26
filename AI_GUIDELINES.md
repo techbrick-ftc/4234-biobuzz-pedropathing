@@ -284,3 +284,10 @@ Horizontal Alignment may be used to align "=" characters in areas where at least
 boolean example1   = false;
 boolean isActiveR  = true;
 boolean opticOn    = false;
+
+
+// TODO in AI_GUIDELIMES.md
+// fix apriltag id values
+// fix outdated subturret info 
+// add new hw to info sheet 
+// potentially remove other outdated info 
